@@ -7,6 +7,7 @@ import numpy as np
 from torch.nn import functional as F
 
 from models import UNet
+from models import DeepLab
 from dataloaders import transforms
 from utils import utils
 
@@ -49,8 +50,8 @@ _, frame = cap.read()
 H, W = frame.shape[:2]
 
 # Video output
-fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-out = cv2.VideoWriter(args.output, fourcc, 30, (W,H))
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+out = cv2.VideoWriter(args.output, fourcc, cap.get(cv2.CAP_PROP_FPS), (W,H))
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 # Background
@@ -69,7 +70,8 @@ else:
 #------------------------------------------------------------------------------
 #	Create model and load weights
 #------------------------------------------------------------------------------
-model = UNet(
+
+model = DeepLab.UNet(
     backbone="mobilenetv2",
     num_classes=2,
 	pretrained_backbone=None
@@ -85,7 +87,9 @@ model.eval()
 #   Predict frames
 #------------------------------------------------------------------------------
 i = 0
-while(cap.isOpened()):
+fr_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+# while(cap.isOpened()):
+for i in range(int(fr_count - 10)):
 	# Read frame from camera
 	start_time = time()
 	_, frame = cap.read()
@@ -114,8 +118,9 @@ while(cap.isOpened()):
 
 	# Draw result
 	if args.bg is None:
-		image_alpha = utils.draw_matting(image, mask)
+        image_alpha = utils.draw_matting(image, mask)
 		# image_alpha = utils.draw_transperency(image, mask, COLOR1, COLOR2)
+        # image alpha = utils.draw_fore_to_back(image, mask)
 	else:
 		image_alpha = utils.draw_fore_to_back(image, mask, BACKGROUND, kernel_sz=KERNEL_SZ, sigma=SIGMA)
 	draw_time = time()
@@ -137,6 +142,6 @@ while(cap.isOpened()):
 		cv2.imshow('webcam', image_alpha[..., ::-1])
 	if cv2.waitKey(1) & 0xFF == ord('q'):
 		break
-
+out.release()
 cap.release()
 cv2.destroyAllWindows()

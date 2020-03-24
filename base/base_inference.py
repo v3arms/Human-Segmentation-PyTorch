@@ -5,6 +5,7 @@ import cv2, torch
 import numpy as np
 from time import time
 from torch.nn import functional as F
+from progressbar import progressbar
 
 
 #------------------------------------------------------------------------------
@@ -48,7 +49,7 @@ class BaseInference(object):
 		return image_alpha
 
 
-	def draw_transperency(self, image, mask):
+	def draw_transparency(self, image, mask):
 		"""
 		image (np.uint8) shape (H,W,3)
 		mask  (np.float32) range from 0 to 1, shape (H,W)
@@ -74,13 +75,19 @@ class BaseInference(object):
 		image_alpha = image*mask_filtered + self.background*(1-mask_filtered)
 		return image_alpha.astype(np.uint8)
 
+	
+	def draw_white(self, image, mask):
+		image[mask == 0] = 255
+		return image
+
+
 
 #------------------------------------------------------------------------------
 #   VideoInference
 #------------------------------------------------------------------------------
 class VideoInference(BaseInference):
-	def __init__(self, model, video_path, input_size, use_cuda=True, draw_mode='matting',
-				color_f=[255,0,0], color_b=[0,0,255], kernel_sz=25, sigma=0, background_path=None):
+	def __init__(self, model, video_path, video_out_path, input_size, use_cuda=True, draw_mode='white',
+				color_f=[255,0,0], color_b=[0,0,255], kernel_sz=25, sigma=0, background_path=None, frame_range=None):
 
 		# Initialize
 		super(VideoInference, self).__init__(model, color_f, color_b, kernel_sz, sigma, background_path)
@@ -89,10 +96,12 @@ class VideoInference(BaseInference):
 		self.draw_mode = draw_mode
 		if draw_mode=='matting':
 			self.draw_func = self.draw_matting
-		elif draw_mode=='transperency':
-			self.draw_func = self.draw_transperency
+		elif draw_mode=='transparency':
+			self.draw_func = self.draw_transparency
 		elif draw_mode=='background':
 			self.draw_func = self.draw_background
+		elif draw_mode=='white':
+			self.draw_func = self.draw_white
 		else:
 			raise NotImplementedError
 
@@ -104,7 +113,16 @@ class VideoInference(BaseInference):
 		self.video_path = video_path
 		self.cap = cv2.VideoCapture(video_path)
 		_, frame = self.cap.read()
-		self.H, self.W = frame.shape[:2]
+		self.H, self.W = int(self.cap.get(3)), int(self.cap.get(4))
+		self.frame_range = frame_range
+
+		self.video_out_path = video_out_path
+		self.writer = cv2.VideoWriter(
+							self.video_out_path, 
+							cv2.VideoWriter_fourcc(*"mp4v"), 
+							self.cap.get(cv2.CAP_PROP_FPS), 
+							(self.H, self.W),	
+						)
 
 
 	def load_image(self):
@@ -139,8 +157,12 @@ class VideoInference(BaseInference):
 
 
 	def run(self):
-		while(True):
-			# Read frame from camera
+		fr_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+		if self.frame_range is None:
+			self.frame_range = (0, fr_count - 1)
+
+		for i in progressbar(range(self.frame_range[0], self.frame_range[1])):
+			# Read frame from video
 			start_time = time()
 			image = self.load_image()
 			read_cam_time = time()
@@ -157,17 +179,23 @@ class VideoInference(BaseInference):
 			image_alpha = self.draw_func(image, mask)
 			draw_time = time()
 
+			# Write
+			self.writer.write(image_alpha[..., ::-1])
+		self.writer.release()
+		self.cap.release()
+		cv2.destroyAllWindows() 
+
 			# Wait for interupt
-			cv2.imshow('webcam', image_alpha[..., ::-1])
-			if cv2.waitKey(1) & 0xFF == ord('q'):
-				break
+			#cv2.imshow('webcam', image_alpha[..., ::-1])
+			#if cv2.waitKey(1) & 0xFF == ord('q'):
+			#	break
 
 			# Print runtime
-			read = read_cam_time-start_time
-			preproc = preproc_time-read_cam_time
-			pred = predict_time-preproc_time
-			draw = draw_time-predict_time
-			total = read + preproc + pred + draw
-			fps = 1 / total
-			print("read: %.3f [s]; preproc: %.3f [s]; pred: %.3f [s]; draw: %.3f [s]; total: %.3f [s]; fps: %.2f [Hz]" % 
-				(read, preproc, pred, draw, total, fps))
+			#read = read_cam_time-start_time
+			#preproc = preproc_time-read_cam_time
+			#pred = predict_time-preproc_time
+			#draw = draw_time-predict_time
+			#total = read + preproc + pred + draw
+			#fps = 1 / total
+			#print("read: %.3f [s]; preproc: %.3f [s]; pred: %.3f [s]; draw: %.3f [s]; total: %.3f [s]; fps: %.2f [Hz]" % 
+			#	(read, preproc, pred, draw, total, fps))
