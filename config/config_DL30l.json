@@ -5,7 +5,7 @@
 	"arch": {
 		"type": "DeepLabV3Plus",
 		"args": {
-			"backbone": "resnet18",
+			"backbone": "resnet34",
 			"output_stride": 16,
 			"num_classes": 2,
 			"freeze_bn": false
@@ -15,9 +15,9 @@
 	"train_loader": {
 		"type": "SegmentationDataLoader",
 		"args":{
-			"pairs_file": "dataset/person_train_mask.txt",
+			"pairs_file": "./dataset/person_train_mask.txt",
 			"color_channel": "RGB",
-			"resize": 320,
+			"resize": 480,
 			"padding_value": 0,
 			"is_training": true,
 			"noise_std": 3,
@@ -28,7 +28,7 @@
 			"normalize": true,
 			"one_hot": false,
 			"shuffle": true,
-			"batch_size": 16,
+			"batch_size": 12,
 			"n_workers": 24,
 			"pin_memory": true
 		}
@@ -37,15 +37,15 @@
 	"valid_loader": {
 		"type": "SegmentationDataLoader",
 		"args":{
-			"pairs_file": "dataset/person_valid_mask.txt",
+			"pairs_file": "./dataset/person_valid_mask.txt",
 			"color_channel": "RGB",
-			"resize": 320,
+			"resize": 480,
 			"padding_value": 0,
 			"is_training": false,
 			"normalize": true,
 			"one_hot": false,
 			"shuffle": false,
-			"batch_size": 16,
+			"batch_size": 12,
 			"n_workers": 24,
 			"pin_memory": true
 		}
@@ -54,8 +54,8 @@
 	"optimizer": {
 		"type": "SGD",
 		"args":{
-			"lr": 0.02,
-			"momentum": 0.85,
+			"lr": 1e-2,
+			"momentum": 0.9,
 			"weight_decay": 1e-8
 		}
 	},
@@ -74,7 +74,7 @@
 	},
 
 	"trainer": {
-		"epochs": 100,
+		"epochs": 80,
 		"save_dir": "./checkpoints/",
 		"save_freq": 1,
 		"verbosity": 2,

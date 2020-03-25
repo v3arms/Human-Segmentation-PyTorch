@@ -159,7 +159,7 @@ class VideoInference(BaseInference):
 	def run(self):
 		fr_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 		if self.frame_range is None:
-			self.frame_range = (0, fr_count - 1)
+			self.frame_range = (0, fr_count - 10)
 
 		for i in progressbar(range(self.frame_range[0], self.frame_range[1])):
 			# Read frame from video

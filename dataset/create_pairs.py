@@ -13,14 +13,20 @@ from multiprocessing import Pool, Manager
 #	Main execution
 #------------------------------------------------------------------------------
 # Get files
-image_files  = sorted(glob("/media/antiaegis/storing/datasets/HumanSeg/EG/data_for_run/images/*.*"))
-image_files += sorted(glob("/media/antiaegis/storing/datasets/HumanSeg/Supervisely/data_for_run/images/*.*"))
 
-label_files  = sorted(glob("/media/antiaegis/storing/datasets/HumanSeg/EG/data_for_run/labels/*.*"))
-label_files += sorted(glob("/media/antiaegis/storing/datasets/HumanSeg/Supervisely/data_for_run/labels/*.*"))
+image_files  = sorted(glob("/home/muromirg/datasets/final1_001/bar/img/*.png"))
+image_files += sorted(glob("/home/muromirg/datasets/final1_001/lay/img/*.png"))
+image_files += sorted(glob("/home/muromirg/datasets/final1_001/room_clothes/img/*.png"))
 
+label_files  = sorted(glob("/home/muromirg/datasets/final1_001/bar/masks_machine/*.png"))
+label_files += sorted(glob("/home/muromirg/datasets/final1_001/lay/masks_machine/*.png"))
+label_files += sorted(glob("/home/muromirg/datasets/final1_001/room_clothes/masks_machine/*.png"))
+
+print(len(image_files), " image files found")
+print(len(label_files), " label files found")
 assert len(image_files)==len(label_files)
 n_files = len(image_files)
+
 
 # Shuffle
 seed(0)
@@ -62,8 +68,8 @@ print("Number of averg indices:", len(averg_ind))
 
 # Split train/valid
 RATIO = 0.9
-TRAIN_FILE = "dataset/antiaegis_train_mask.txt"
-VALID_FILE = "dataset/antiaegis_valid_mask.txt"
+TRAIN_FILE = "person_train_mask.txt"
+VALID_FILE = "person_valid_mask.txt"
 
 shuffle(averg_ind)
 ind_train = averg_ind[:int(RATIO*len(averg_ind))]
