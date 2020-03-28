@@ -108,3 +108,4 @@ venv.bak/
 vd/
 pretr/
 checkpoints/
+*.mp4
