@@ -118,7 +118,7 @@ for i in range(int(fr_count - 10)):
 
 	# Draw result
 	if args.bg is None:
-        image_alpha = utils.draw_matting(image, mask)
+        	image_alpha = utils.draw_matting(image, mask)
 		# image_alpha = utils.draw_transperency(image, mask, COLOR1, COLOR2)
         # image alpha = utils.draw_fore_to_back(image, mask)
 	else:
