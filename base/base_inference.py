@@ -5,8 +5,7 @@ import cv2, torch
 import numpy as np
 from time import time
 from torch.nn import functional as F
-from progressbar import progressbar
-
+from tqdm import tqdm
 
 #------------------------------------------------------------------------------
 #   BaseInference
@@ -161,7 +160,7 @@ class VideoInference(BaseInference):
 		if self.frame_range is None:
 			self.frame_range = (0, fr_count - 10)
 
-		for i in progressbar(range(self.frame_range[0], self.frame_range[1])):
+		for i in tqdm(range(self.frame_range[0], self.frame_range[1])):
 			# Read frame from video
 			start_time = time()
 			image = self.load_image()
