@@ -35,9 +35,7 @@ tensorboardX==1.7
 tensorflow==1.13.1
 tensorflow-estimator==1.13.0
 termcolor==1.1.0
-torch==1.4.0
 torchsummary==1.5.1
-torchvision==0.5.0
 tqdm==4.45.0
 typed-ast==1.4.0
 Werkzeug==0.15.4
