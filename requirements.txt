@@ -17,9 +17,8 @@ lazy-object-proxy==1.4.1
 Markdown==3.1.1
 matplotlib==3.1.1
 mccabe==0.6.1
-mkl-fft==1.0.15
-mkl-random==1.1.0
-mkl-service==2.3.0
+mkl-fft==1.0.6
+mkl-random==1.0.1.1
 mock==3.0.5
 numpy==1.18.2
 olefile==0.46
@@ -36,7 +35,6 @@ tensorboardX==1.7
 tensorflow==1.13.1
 tensorflow-estimator==1.13.0
 termcolor==1.1.0
--e git+https://github.com/AntiAegis/pytorch-image-models@2be1fd0acbfefbeb187932278de5a357f989bc0f#egg=timm&subdirectory=../../../models/pytorch-image-models
 torch==1.4.0
 torchsummary==1.5.1
 torchvision==0.5.0
@@ -44,3 +42,4 @@ tqdm==4.45.0
 typed-ast==1.4.0
 Werkzeug==0.15.4
 wrapt==1.11.2
+timm==0.1.12
