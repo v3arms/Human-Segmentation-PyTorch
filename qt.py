@@ -61,7 +61,7 @@ class MainWindow(QMainWindow):
             draw_mode='matting'
         )
         print('Start processing frames...')
-        # inference.run()
+        inference.run()
         print('Done.')
 
         print('Running ffmpeg to merge video channels...')
