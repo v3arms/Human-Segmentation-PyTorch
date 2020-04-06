@@ -90,8 +90,7 @@ class MainWindow(QMainWindow):
             input_size=320,
             background_path = "./backgrounds/white.jpg",
             use_cuda=cuda,
-            draw_mode='matting',
-            frame_range=(0, 100)
+            draw_mode='matting'
         )
         print('Start processing frames...')
         self.inference.run()
