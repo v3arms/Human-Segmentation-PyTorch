@@ -111,9 +111,11 @@ class VideoInference(BaseInference):
 		# Read video
 		self.video_path = video_path
 		self.cap = cv2.VideoCapture(video_path)
-		_, frame = self.cap.read()
+		# _, frame = self.cap.read()
 		self.H, self.W = int(self.cap.get(3)), int(self.cap.get(4))
 		self.frame_range = frame_range
+		self.cur_frame = 0
+		self.fr_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 		self.video_out_path = video_out_path
 		self.writer = cv2.VideoWriter(
@@ -155,46 +157,21 @@ class VideoInference(BaseInference):
 			return mask
 
 
-	def run(self):
-		fr_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+	def run(self, qt = False):
 		if self.frame_range is None:
-			self.frame_range = (0, fr_count - 10)
+			self.frame_range = (0, self.fr_count - 10)
 
-		for i in tqdm(range(self.frame_range[0], self.frame_range[1])):
-			# Read frame from video
-			start_time = time()
+		for i in tqdm(range(self.frame_range[0], self.frame_range[1] - 10)):
+			self.cur_frame = i
+
 			image = self.load_image()
-			read_cam_time = time()
-
-			# Preprocess
 			X = self.preprocess(image)
-			preproc_time = time()
-
-			# Predict
 			mask = self.predict(X)
-			predict_time = time()
 
-			# Draw result
 			image_alpha = self.draw_func(image, mask)
-			draw_time = time()
-
-			# Write
 			self.writer.write(image_alpha[..., ::-1])
+
 		self.writer.release()
 		self.cap.release()
 		cv2.destroyAllWindows() 
 
-			# Wait for interupt
-			#cv2.imshow('webcam', image_alpha[..., ::-1])
-			#if cv2.waitKey(1) & 0xFF == ord('q'):
-			#	break
-
-			# Print runtime
-			#read = read_cam_time-start_time
-			#preproc = preproc_time-read_cam_time
-			#pred = predict_time-preproc_time
-			#draw = draw_time-predict_time
-			#total = read + preproc + pred + draw
-			#fps = 1 / total
-			#print("read: %.3f [s]; preproc: %.3f [s]; pred: %.3f [s]; draw: %.3f [s]; total: %.3f [s]; fps: %.2f [Hz]" % 
-			#	(read, preproc, pred, draw, total, fps))
