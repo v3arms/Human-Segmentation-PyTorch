@@ -27,6 +27,71 @@ class BaseInference(object):
 		raise NotImplementedError
 
 
+	def resize_image(self, image, expected_size, pad_value, ret_params=False, mode=cv2.INTER_LINEAR):
+		"""
+		image (ndarray) with either shape of [H,W,3] for RGB or [H,W] for grayscale.
+		Padding is added so that the content of image is in the center.
+		"""
+		h, w = image.shape[:2]
+		if w>h:
+			w_new = int(expected_size)
+			h_new = int(h * w_new / w)
+			image = cv2.resize(image, (w_new, h_new), interpolation=mode)
+
+			pad_up = (w_new - h_new) // 2
+			pad_down = w_new - h_new - pad_up
+			if len(image.shape)==3:
+				pad_width = ((pad_up, pad_down), (0,0), (0,0))
+				constant_values=((pad_value, pad_value), (0,0), (0,0))
+			elif len(image.shape)==2:
+				pad_width = ((pad_up, pad_down), (0,0))
+				constant_values=((pad_value, pad_value), (0,0))
+
+			image = np.pad(
+				image,
+				pad_width=pad_width,
+				mode="constant",
+				constant_values=constant_values,
+			)
+			if ret_params:
+				return image, pad_up, 0, h_new, w_new
+			else:
+				return image
+
+		elif w<h:
+			h_new = int(expected_size)
+			w_new = int(w * h_new / h)
+			image = cv2.resize(image, (w_new, h_new), interpolation=mode)
+
+			pad_left = (h_new - w_new) // 2
+			pad_right = h_new - w_new - pad_left
+			if len(image.shape)==3:
+				pad_width = ((0,0), (pad_left, pad_right), (0,0))
+				constant_values=((0,0), (pad_value, pad_value), (0,0))
+			elif len(image.shape)==2:
+				pad_width = ((0,0), (pad_left, pad_right))
+				constant_values=((0,0), (pad_value, pad_value))
+
+			image = np.pad(
+				image,
+				pad_width=pad_width,
+				mode="constant",
+				constant_values=constant_values,
+			)
+			if ret_params:
+				return image, 0, pad_left, h_new, w_new
+			else:
+				return image
+
+		else:
+			image = cv2.resize(image, (expected_size, expected_size), interpolation=mode)
+			if ret_params:
+				return image, 0, 0, expected_size, expected_size
+			else:
+				return image
+
+
+
 	def preprocess(self, image, *args):
 		raise NotImplementedError
 
@@ -133,7 +198,13 @@ class VideoInference(BaseInference):
 
 
 	def preprocess(self, image):
-		image = cv2.resize(image, (self.input_size,self.input_size), interpolation=cv2.INTER_LINEAR)
+		image, pad_up, pad_left, h_new, w_new = self.resize_image(image, expected_size=self.input_size, pad_value=0, ret_params=True)
+		self.pad_up = pad_up
+		self.pad_left = pad_left
+		self.h_new = h_new
+		self.w_new = w_new
+
+		# image = cv2.resize(image, (self.input_size,self.input_size), interpolation=cv2.INTER_LINEAR)
 		image = image.astype(np.float32) / 255.0
 		image = (image - self.mean) / self.std
 		X = np.transpose(image, axes=(2, 0, 1))
@@ -146,12 +217,14 @@ class VideoInference(BaseInference):
 		with torch.no_grad():
 			if self.use_cuda:
 				mask = self.model(X.cuda())
-				mask = F.interpolate(mask, size=(self.H, self.W), mode='bilinear', align_corners=True)
+				mask = mask[..., self.pad_up: self.pad_up+self.h_new, self.pad_left: self.pad_left+self.w_new]
+				mask = F.interpolate(mask, size=(self.W, self.H), mode='bilinear', align_corners=True)
 				mask = F.softmax(mask, dim=1)
 				mask = mask[0,1,...].cpu().numpy()
 			else:
 				mask = self.model(X)
-				mask = F.interpolate(mask, size=(self.H, self.W), mode='bilinear', align_corners=True)
+				mask = mask[..., self.pad_up: self.pad_up+self.h_new, self.pad_left: self.pad_left+self.w_new]
+				mask = F.interpolate(mask, size=(self.W, self.H), mode='bilinear', align_corners=True)
 				mask = F.softmax(mask, dim=1)
 				mask = mask[0,1,...].numpy()
 			return mask
@@ -167,6 +240,9 @@ class VideoInference(BaseInference):
 			image = self.load_image()
 			X = self.preprocess(image)
 			mask = self.predict(X)
+
+			#if image.shape != mask.shape :
+			#	raise ValueError(mask.shape, image.shape)
 
 			image_alpha = self.draw_func(image, mask)
 			self.writer.write(image_alpha[..., ::-1])
